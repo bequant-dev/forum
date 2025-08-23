@@ -9,6 +9,10 @@ git config --global --add safe.directory /var/www/discourse
 # Set required environment
 export RAILS_ENV=production
 
+# Set developer emails explicitly
+export DISCOURSE_DEVELOPER_EMAILS="rajat@bequant.dev,1997.rajatjain@gmail.com"
+echo "🔧 Set developer emails: ${DISCOURSE_DEVELOPER_EMAILS}"
+
 # Debug port configuration
 echo "🔍 Checking port configuration..."
 echo "PORT: ${PORT:-not set}"
@@ -45,6 +49,18 @@ fi
 export DISCOURSE_REDIS_URL="${REDIS_URL}"
 export SIDEKIQ_REDIS_URL="${REDIS_URL}"
 export REDIS_PROVIDER="REDIS_URL"
+
+# Set SMTP environment variables if provided
+if [ -n "${DISCOURSE_SMTP_USER_NAME:-}" ] && [ -n "${DISCOURSE_SMTP_PASSWORD:-}" ]; then
+  echo "🔧 Configuring SMTP settings..."
+  export DISCOURSE_SMTP_ADDRESS="smtp.gmail.com"
+  export DISCOURSE_SMTP_PORT="587"
+  export DISCOURSE_SMTP_ENABLE_START_TLS="true"
+  export DISCOURSE_SMTP_DOMAIN="bequant.dev"
+  echo "✅ SMTP configured for Gmail"
+else
+  echo "⚠️  SMTP credentials not provided - email will be disabled"
+fi
 
 # Extract Redis components for individual variables
 if [[ "${REDIS_URL}" =~ redis://([^:]*):([^@]*)@([^:]*):([^/]*) ]]; then
