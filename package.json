@@ -1,0 +1,14 @@
+{
+  "name": "bequant-forum",
+  "version": "1.0.0",
+  "description": "BeQuant Community Forum - Discourse deployment and configuration",
+  "main": "index.js",
+  "scripts": {
+    "docs": "echo 'Documentation for Discourse deployment'"
+  },
+  "keywords": ["forum", "discourse", "community", "trading", "quantitative-finance"],
+  "author": "BeQuant Team",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}
