@@ -19,7 +19,7 @@ This repository contains documentation and configuration for deploying the BeQua
 
 - **Forum Platform**: Discourse
 - **Hosting**: Railway
-- **Authentication**: Clerk (SSO integration)
+- **Authentication**: Clerk OAuth2 (same as BeQuant platform)
 - **Domain**: Custom domain integration
 
 ## 📋 Prerequisites
@@ -59,9 +59,9 @@ DATABASE_URL=your-railway-postgres-url
 # Redis (Railway will provide)
 REDIS_URL=your-railway-redis-url
 
-# Clerk SSO Integration
-CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-CLERK_SECRET_KEY=your_clerk_secret_key
+# Clerk OAuth2 (Same as BeQuant)
+CLERK_OAUTH2_CLIENT_ID=your-clerk-oauth-client-id
+CLERK_OAUTH2_CLIENT_SECRET=your-clerk-oauth-client-secret
 ```
 
 ### 3. Deploy Discourse

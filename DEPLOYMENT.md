@@ -4,6 +4,21 @@ This guide walks you through deploying the BeQuant Community Forum using Discour
 
 ## 🚀 Quick Start
 
+### Database Strategy
+
+**Important**: We're using Railway's PostgreSQL for Discourse, separate from your existing BeQuant Supabase instance. This ensures:
+
+- ✅ **Security**: Forum data isolated from main app
+- ✅ **Performance**: Dedicated database for forum operations  
+- ✅ **Reliability**: No conflicts between applications
+- ✅ **Cost Efficiency**: Included in Railway pricing
+
+Your existing BeQuant Supabase will continue to handle:
+- User analytics and tracking
+- Subscription management
+- Leaderboards and achievements
+- Main application data
+
 ### Step 1: Prepare Railway Account
 
 1. Go to [Railway Dashboard](https://railway.app/dashboard)
@@ -21,13 +36,15 @@ This guide walks you through deploying the BeQuant Community Forum using Discour
 
 Railway will need these services for Discourse:
 
-1. **PostgreSQL Database**
+1. **PostgreSQL Database** (Separate from your BeQuant Supabase)
    - Click "New Service" → "Database" → "PostgreSQL"
    - Railway will automatically provision
+   - This is dedicated for Discourse only
 
 2. **Redis Cache**
    - Click "New Service" → "Database" → "Redis"
    - Railway will automatically provision
+   - Used for Discourse caching and sessions
 
 ### Step 4: Configure Environment Variables
 
@@ -38,7 +55,7 @@ In your Railway project, go to "Variables" tab and add:
 DISCOURSE_HOSTNAME=forum.bequant.com
 DISCOURSE_DEVELOPER_EMAILS=admin@bequant.com
 
-# Database (Railway will auto-generate these)
+# Database (Railway PostgreSQL - separate from BeQuant Supabase)
 DATABASE_HOST=${DATABASE_HOST}
 DATABASE_NAME=${DATABASE_NAME}
 DATABASE_USERNAME=${DATABASE_USERNAME}
@@ -57,9 +74,13 @@ DISCOURSE_SMTP_PASSWORD=your-app-password
 DISCOURSE_SMTP_ENABLE_START_TLS=true
 DISCOURSE_SMTP_DOMAIN=bequant.com
 
-# Clerk SSO Integration
-CLERK_SSO_URL=https://your-clerk-instance.clerk.accounts.dev/sso
-CLERK_SSO_SECRET=your-sso-secret
+# Clerk OAuth2 (Same as BeQuant)
+CLERK_OAUTH2_CLIENT_ID=your-clerk-oauth-client-id
+CLERK_OAUTH2_CLIENT_SECRET=your-clerk-oauth-client-secret
+
+# Your existing Clerk keys (for reference)
+CLERK_SECRET_KEY=sk_test_your_secret_key_here
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
 
 # Analytics (Optional)
 GOOGLE_ANALYTICS_ID=GA_MEASUREMENT_ID
@@ -103,21 +124,38 @@ GOOGLE_TAG_MANAGER_ID=GTM_CONTAINER_ID
 2. Navigate to Admin → Email → Test
 3. Send test email to verify configuration
 
-### 3. Clerk SSO Integration
+### 3. Clerk OAuth2 Integration
 
-#### Configure Clerk
+#### Authentication Strategy
 
-1. Go to [Clerk Dashboard](https://dashboard.clerk.com)
-2. Add your forum domain to allowed origins
-3. Configure SSO settings
-4. Get SSO URL and secret
+**Clerk OAuth2:** Use your existing Clerk authentication for the forum
 
-#### Configure Discourse SSO
+**Benefits:**
+- ✅ **Same login system** as BeQuant platform
+- ✅ **Familiar user experience**
+- ✅ **No additional setup costs**
+- ✅ **Consistent branding**
 
-1. In Discourse admin, go to Admin → Settings → SSO
-2. Enable SSO
-3. Set SSO URL and secret
-4. Test SSO login
+#### Configure Clerk OAuth2
+
+1. **In Clerk Dashboard:**
+   - Go to "User & authentication" → "Social connections"
+   - Add OAuth application for forum
+   - Get OAuth client ID and secret
+   - Set redirect URL to: `https://forum.bequant.com/auth/oauth2/callback`
+
+2. **In Discourse Admin:**
+   - Go to Admin → Settings → Authentication
+   - Enable "OAuth2" provider
+   - Configure Clerk OAuth credentials
+   - Test login flow
+
+#### User Experience
+
+- Users click "Login with Clerk" on forum
+- Redirected to familiar BeQuant login
+- Same email/Google login as main platform
+- Seamless authentication experience
 
 ### 4. Categories Setup
 
