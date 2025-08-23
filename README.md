@@ -35,8 +35,8 @@ This repository contains documentation and configuration for deploying the BeQua
 
 1. Go to [Railway Dashboard](https://railway.app/dashboard)
 2. Click "New Project"
-3. Select "Deploy from GitHub repo"
-4. Choose this repository
+3. Select "Deploy from Template"
+4. Search for "Discourse" and select the official template
 
 ### 2. Configure Environment Variables
 
@@ -66,12 +66,13 @@ CLERK_OAUTH2_CLIENT_SECRET=your-clerk-oauth-client-secret
 
 ### 3. Deploy Discourse
 
-Railway will automatically deploy Discourse using Docker. The deployment includes:
+Railway will automatically deploy Discourse using their optimized template. The deployment includes:
 
-- PostgreSQL database
-- Redis for caching
-- Discourse application
+- PostgreSQL database (automatically provisioned)
+- Redis for caching (automatically provisioned)
+- Discourse application (pre-configured)
 - SSL certificate (automatic)
+- All necessary Docker configuration
 
 ### 4. Initial Setup
 
