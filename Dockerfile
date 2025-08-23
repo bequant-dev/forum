@@ -5,5 +5,5 @@ RUN chmod +x /startup.sh
 
 COPY discourse.conf /var/discourse/config/discourse.conf
 
-EXPOSE 3000
-CMD ["/startup.sh"]
+EXPOSE 3000 8080
+ENTRYPOINT ["/startup.sh"]
