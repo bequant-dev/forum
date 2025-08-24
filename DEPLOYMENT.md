@@ -1,356 +1,227 @@
-# BeQuant Forum - Railway Deployment Guide
+# Railway Discourse Deployment Guide
 
-This guide walks you through deploying the BeQuant Community Forum using Discourse on Railway.
+This guide walks you through deploying Discourse on Railway using a two-stage pre-deploy approach with Clerk OAuth2 integration.
 
 ## 🚀 Quick Start
 
-### Database Strategy
-
-**Important**: We're using Railway's PostgreSQL for Discourse, separate from your existing BeQuant Supabase instance. This ensures:
-
-- ✅ **Security**: Forum data isolated from main app
-- ✅ **Performance**: Dedicated database for forum operations  
-- ✅ **Reliability**: No conflicts between applications
-- ✅ **Cost Efficiency**: Included in Railway pricing
-
-Your existing BeQuant Supabase will continue to handle:
-- User analytics and tracking
-- Subscription management
-- Leaderboards and achievements
-- Main application data
-
-### Step 1: Prepare Railway Account
+### Step 1: Deploy Discourse Template
 
 1. Go to [Railway Dashboard](https://railway.app/dashboard)
-2. Sign up/login with your GitHub account
-3. Ensure you have a Railway plan (Discourse requires resources)
+2. Click "New Project" → "Deploy from Template"
+3. Search for "Discourse" and select the Bitnami Discourse template
+4. Railway will create: Discourse, Sidekiq, PostgreSQL, Redis services
 
-### Step 2: Create New Project
+### Step 2: Set Up GitHub Deploy Key
 
-1. Click "New Project" in Railway dashboard
-2. Select "Deploy from GitHub repo"
-3. Choose this repository (`bequant-forum`)
-4. Railway will automatically detect the Dockerfile
+Since your repository is private, we need to set up a deploy key for Railway to access it.
 
-### Step 3: Add Required Services
+1. **Generate SSH Key Pair** (run on your local machine):
+   ```bash
+   ssh-keygen -t rsa -b 4096 -C "railway-discourse@bequant.dev" -f ~/.ssh/railway_deploy_key
+   cat ~/.ssh/railway_deploy_key.pub  # Copy this for GitHub
+   cat ~/.ssh/railway_deploy_key      # Copy this for Railway
+   ```
 
-Railway will need these services for Discourse:
+2. **Add Public Key to GitHub**:
+   - Go to your repo: `https://github.com/rajatjain/bequant`
+   - **Settings** → **Deploy keys** → **Add deploy key**
+   - Title: `Railway Discourse Deploy`
+   - Key: Paste the public key content
+   - ✅ Check "Allow write access"
 
-1. **PostgreSQL Database** (Separate from your BeQuant Supabase)
-   - Click "New Service" → "Database" → "PostgreSQL"
-   - Railway will automatically provision
-   - This is dedicated for Discourse only
+3. **Add Private Key to Railway**:
+   - Go to **Discourse** service → **Variables**
+   - Add: `GITHUB_DEPLOY_KEY` = Your private key content
 
-2. **Redis Cache**
-   - Click "New Service" → "Database" → "Redis"
-   - Railway will automatically provision
-   - Used for Discourse caching and sessions
+### Step 3: Host Public Bootstrap Script
 
-### Step 4: Configure Environment Variables
+You need to host the `public-pre-deploy.sh` script publicly so Railway can fetch it.
 
-In your Railway project, go to "Variables" tab and add:
+**Option A: GitHub Gist (Recommended)**
+1. Go to [gist.github.com](https://gist.github.com)
+2. Create a new gist with the content of `public-pre-deploy.sh`
+3. Make it public
+4. Get the raw URL: `https://gist.githubusercontent.com/YOUR_USERNAME/GIST_ID/raw/public-pre-deploy.sh`
+
+**Option B: GitHub Raw Content**
+1. Create a public repository for just this script
+2. Use the raw GitHub URL: `https://raw.githubusercontent.com/YOUR_USERNAME/REPO_NAME/main/public-pre-deploy.sh`
+
+### Step 4: Configure Pre-Deploy Script
+
+For both **Discourse** and **Sidekiq** services:
+
+1. Go to **Settings** → **Deploy**
+2. In **Pre-Deploy Command**, enter:
+```bash
+curl -sSL YOUR_PUBLIC_SCRIPT_URL | bash
+```
+
+Replace `YOUR_PUBLIC_SCRIPT_URL` with the URL from Step 3.
+
+### Step 5: Set Environment Variables
+
+Add these to your **Discourse** service:
 
 ```env
-# Discourse Basic Configuration
-DISCOURSE_HOSTNAME=forum.bequant.com
-DISCOURSE_DEVELOPER_EMAILS=admin@bequant.com
+# Basic Configuration
+DISCOURSE_HOSTNAME=forum.bequant.dev
+DISCOURSE_DEVELOPER_EMAILS=rajat@bequant.dev,1997.rajatjain@gmail.com
 
-# Database (Railway PostgreSQL - separate from BeQuant Supabase)
+# Database (Railway auto-generates)
 DATABASE_HOST=${DATABASE_HOST}
 DATABASE_NAME=${DATABASE_NAME}
 DATABASE_USERNAME=${DATABASE_USERNAME}
 DATABASE_PASSWORD=${DATABASE_PASSWORD}
 
-# Redis (Railway will auto-generate these)
+# Redis (Railway auto-generates)
 REDIS_HOST=${REDIS_HOST}
 REDIS_PORT=${REDIS_PORT}
 REDIS_PASSWORD=${REDIS_PASSWORD}
 
-# Email Configuration (Gmail recommended)
-DISCOURSE_SMTP_ADDRESS=smtp.gmail.com
-DISCOURSE_SMTP_PORT=587
+# SMTP (Gmail)
 DISCOURSE_SMTP_USER_NAME=your-email@gmail.com
 DISCOURSE_SMTP_PASSWORD=your-app-password
-DISCOURSE_SMTP_ENABLE_START_TLS=true
-DISCOURSE_SMTP_DOMAIN=bequant.com
 
-# Clerk OAuth2 (Same as BeQuant)
+# Clerk OAuth2 Configuration
 CLERK_OAUTH2_CLIENT_ID=your-clerk-oauth-client-id
 CLERK_OAUTH2_CLIENT_SECRET=your-clerk-oauth-client-secret
 
-# Your existing Clerk keys (for reference)
-CLERK_SECRET_KEY=sk_test_your_secret_key_here
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
-
-# Analytics (Optional)
-GOOGLE_ANALYTICS_ID=GA_MEASUREMENT_ID
-GOOGLE_TAG_MANAGER_ID=GTM_CONTAINER_ID
+# GitHub Deploy Key (for private repo access)
+GITHUB_DEPLOY_KEY=-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----
 ```
 
-### Step 5: Deploy
+### Step 6: Configure Sidekiq
 
-1. Railway will automatically start building and deploying
-2. Monitor the deployment logs
-3. Wait for the build to complete (5-10 minutes)
+For **Sidekiq** service, add the same variables but reference Discourse:
 
-### Step 6: Initial Setup
+```env
+DISCOURSE_HOSTNAME=${{Discourse.DISCOURSE_HOSTNAME}}
+DISCOURSE_DEVELOPER_EMAILS=${{Discourse.DISCOURSE_DEVELOPER_EMAILS}}
+DATABASE_HOST=${{Discourse.DATABASE_HOST}}
+DATABASE_NAME=${{Discourse.DATABASE_NAME}}
+DATABASE_USERNAME=${{Discourse.DATABASE_USERNAME}}
+DATABASE_PASSWORD=${{Discourse.DATABASE_PASSWORD}}
+REDIS_HOST=${{Discourse.REDIS_HOST}}
+REDIS_PORT=${{Discourse.REDIS_PORT}}
+REDIS_PASSWORD=${{Discourse.REDIS_PASSWORD}}
+DISCOURSE_SMTP_USER_NAME=${{Discourse.DISCOURSE_SMTP_USER_NAME}}
+DISCOURSE_SMTP_PASSWORD=${{Discourse.DISCOURSE_SMTP_PASSWORD}}
+CLERK_OAUTH2_CLIENT_ID=${{Discourse.CLERK_OAUTH2_CLIENT_ID}}
+CLERK_OAUTH2_CLIENT_SECRET=${{Discourse.CLERK_OAUTH2_CLIENT_SECRET}}
+GITHUB_DEPLOY_KEY=${{Discourse.GITHUB_DEPLOY_KEY}}
+```
 
-1. Visit your Railway-provided URL
-2. Complete the Discourse setup wizard
-3. Create your admin account
-4. Configure basic settings
+### Step 7: Deploy
 
-## 🔧 Post-Deployment Configuration
+1. Railway will automatically start building
+2. The public bootstrap script will run and set up SSH
+3. It will clone your private repository and run the main pre-deploy script
+4. Wait for deployment to complete (5-10 minutes)
 
-### 1. Domain Setup
+## 🔧 Two-Stage Pre-Deploy Process
 
-1. In Railway, go to your project settings
-2. Add custom domain: `forum.bequant.com`
-3. Configure DNS records as instructed
-4. Wait for SSL certificate (automatic)
+### Stage 1: Public Bootstrap Script
+1. ✅ Fetched from public URL (GitHub Gist or raw content)
+2. ✅ Sets up SSH key from `GITHUB_DEPLOY_KEY` environment variable
+3. ✅ Clones your private repository
+4. ✅ Calls the main pre-deploy script
 
-### 2. Email Configuration
+### Stage 2: Private Pre-Deploy Script
+1. ✅ Clones `discourse-oauth2-basic` plugin for Clerk SSO
+2. ✅ Creates necessary directories
+3. ✅ Sets up configuration files
+4. ✅ Installs additional plugins (if specified)
+5. ✅ Sets proper permissions
 
-#### Gmail Setup (Recommended)
+## 🔐 Clerk OAuth2 Setup
+
+### Why OAuth2 Instead of Direct Integration?
+
+Discourse is a server-side Ruby on Rails application that cannot directly use Clerk's client-side components like `<SignIn />` and `<SignUp />`. Therefore, we need to use OAuth2 to integrate Clerk as an authentication provider.
+
+### 1. Create OAuth2 Application in Clerk
+
+1. Go to [Clerk Dashboard](https://dashboard.clerk.com)
+2. Navigate to **JWT Templates** → **OAuth2**
+3. Create new OAuth2 application
+4. Set redirect URLs:
+   - `https://forum.bequant.dev/auth/oauth2_basic/callback`
+   - `https://your-railway-url.railway.app/auth/oauth2_basic/callback`
+
+### 2. Configure Discourse
+
+The OAuth2 plugin will be automatically installed. In Discourse admin:
+
+1. Go to **Admin** → **Plugins**
+2. Enable "OAuth2 Basic"
+3. Go to **Admin** → **Site Settings**
+4. Search for "oauth2" and configure:
+   - `oauth2_enabled`: true
+   - `oauth2_client_id`: Your Clerk OAuth2 Client ID
+   - `oauth2_client_secret`: Your Clerk OAuth2 Client Secret
+   - `oauth2_authorize_url`: `https://clerk.bequant.dev/oauth/authorize`
+   - `oauth2_token_url`: `https://clerk.bequant.dev/oauth/token`
+   - `oauth2_user_info_url`: `https://clerk.bequant.dev/oauth/userinfo`
+
+### 3. User Experience
+
+Users will:
+1. Click "Login with Clerk" on the forum
+2. Be redirected to Clerk's OAuth2 authorization page
+3. Authenticate with their existing Clerk account
+4. Be redirected back to Discourse and logged in
+
+## 📧 Email Setup
+
+### Gmail Configuration
 
 1. Enable 2-factor authentication on Gmail
-2. Go to Google Account settings → Security
-3. Generate app password
-4. Use app password in `DISCOURSE_SMTP_PASSWORD`
+2. Generate app password: **Google Account** → **Security** → **App passwords**
+3. Use the app password in `DISCOURSE_SMTP_PASSWORD`
 
-#### Test Email
+## 🎨 Customization
 
-1. Go to Discourse admin panel
-2. Navigate to Admin → Email → Test
-3. Send test email to verify configuration
+### Adding Plugins
 
-### 3. Clerk OAuth2 Integration
+Edit `config/plugins.txt` in this repository and add GitHub URLs:
 
-#### Authentication Strategy
-
-**Clerk OAuth2:** Use your existing Clerk authentication for the forum
-
-**Benefits:**
-- ✅ **Same login system** as BeQuant platform
-- ✅ **Familiar user experience**
-- ✅ **No additional setup costs**
-- ✅ **Consistent branding**
-
-#### Configure Clerk OAuth2
-
-1. **In Clerk Dashboard:**
-   - Go to "User & authentication" → "Social connections"
-   - Add OAuth application for forum
-   - Get OAuth client ID and secret
-   - Set redirect URL to: `https://forum.bequant.com/auth/oauth2/callback`
-
-2. **In Discourse Admin:**
-   - Go to Admin → Settings → Authentication
-   - Enable "OAuth2" provider
-   - Configure Clerk OAuth credentials
-   - Test login flow
-
-#### User Experience
-
-- Users click "Login with Clerk" on forum
-- Redirected to familiar BeQuant login
-- Same email/Google login as main platform
-- Seamless authentication experience
-
-### 4. Categories Setup
-
-Create these initial categories:
-
-1. **Interview Prep**
-   - Color: #2563eb
-   - Description: Get ready for quant trading interviews
-
-2. **Trading Strategies**
-   - Color: #10b981
-   - Description: Share and discuss quantitative strategies
-
-3. **Career Advice**
-   - Color: #8b5cf6
-   - Description: Career guidance and mentorship
-
-4. **General Discussion**
-   - Color: #6b7280
-   - Description: General quantitative finance topics
-
-### 5. Theme Customization
-
-#### Create Custom Theme
-
-1. Go to Admin → Customize → Themes
-2. Create new theme
-3. Upload custom CSS for BeQuant branding
-
-#### BeQuant CSS Template
-
-```css
-/* BeQuant Forum Theme */
-:root {
-  --primary: #2563eb;
-  --primary-dark: #0f172a;
-  --primary-light: #38bdf8;
-  --accent: #f59e0b;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-}
-
-/* Header customization */
-.header {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-}
-
-/* Category colors */
-.category-box[data-category-id="1"] {
-  border-color: #2563eb;
-}
-
-.category-box[data-category-id="2"] {
-  border-color: #10b981;
-}
-
-.category-box[data-category-id="3"] {
-  border-color: #8b5cf6;
-}
-
-.category-box[data-category-id="4"] {
-  border-color: #6b7280;
-}
+```
+https://github.com/discourse/discourse-math.git
+https://github.com/discourse/discourse-solved.git
 ```
 
-### 6. Plugin Installation
+### Modifying Configuration
 
-Install these recommended plugins:
+Update `config/discourse.conf` and `config/site_settings.yml` as needed.
 
-1. **Discourse Solved**
-   - Mark best answers in topics
+## 🔍 Troubleshooting
 
-2. **Discourse Reactions**
-   - Like/dislike posts
+### Pre-Deploy Script Issues
 
-3. **Discourse Calendar**
-   - Schedule events and meetups
+- Check Railway logs for exact error
+- Verify GitHub deploy key is set correctly
+- Ensure all environment variables are set
+- Check that deploy key has access to your repository
+- Verify the public script URL is accessible
 
-4. **Discourse Assign**
-   - Assign topics to users
+### OAuth2 Not Working
 
-## 📊 Monitoring & Analytics
+- Verify Clerk OAuth2 application is configured
+- Check redirect URLs match your domain
+- Review Discourse admin logs
+- Ensure OAuth2 plugin is enabled
 
-### Railway Monitoring
+### Email Issues
 
-1. Monitor resource usage in Railway dashboard
-2. Set up alerts for high CPU/memory usage
-3. Check database performance
+- Verify Gmail app password is correct
+- Check SMTP settings in Discourse admin
+- Test email from Discourse admin panel
 
-### Discourse Analytics
+## 📞 Support
 
-1. Go to Admin → Reports
-2. Monitor user engagement
-3. Track category popularity
-4. Analyze post statistics
-
-### Google Analytics
-
-1. Add Google Analytics tracking code
-2. Monitor traffic and user behavior
-3. Set up conversion tracking
-
-## 🔒 Security & Maintenance
-
-### Regular Maintenance
-
-1. **Backup Database**
-   - Railway provides automatic backups
-   - Monitor backup health
-
-2. **Update Discourse**
-   - Regular security updates
-   - Feature updates
-   - Plugin updates
-
-3. **Monitor Logs**
-   - Check Railway logs
-   - Monitor Discourse logs
-   - Watch for errors
-
-### Security Best Practices
-
-1. **SSL Certificate**
-   - Railway provides automatic SSL
-   - Ensure HTTPS is enforced
-
-2. **User Permissions**
-   - Configure appropriate user roles
-   - Set up moderation tools
-
-3. **Spam Protection**
-   - Enable Akismet integration
-   - Configure spam detection
-
-## 🚨 Troubleshooting
-
-### Common Issues
-
-1. **Deployment Fails**
-   - Check Railway logs
-   - Verify environment variables
-   - Ensure sufficient resources
-
-2. **Email Not Working**
-   - Verify SMTP settings
-   - Check Gmail app password
-   - Test email configuration
-
-3. **SSO Issues**
-   - Verify Clerk configuration
-   - Check SSO URL and secret
-   - Test SSO login flow
-
-4. **Performance Issues**
-   - Monitor Railway resources
-   - Check database performance
-   - Optimize Redis usage
-
-### Getting Help
-
-- **Railway Support**: Check Railway documentation
-- **Discourse Support**: Visit [Discourse Meta](https://meta.discourse.org)
-- **Clerk Support**: Contact Clerk for SSO issues
-
-## 🎉 Launch Checklist
-
-- [ ] Railway deployment successful
-- [ ] Domain configured and SSL working
-- [ ] Email notifications working
-- [ ] Clerk SSO integration complete
-- [ ] Categories and permissions set up
-- [ ] Custom theme applied
-- [ ] Analytics tracking configured
-- [ ] Content seeded from Discord
-- [ ] Pro user benefits configured
-- [ ] Launch announcement ready
-
-## 💰 Cost Estimation
-
-### Railway Pricing (Monthly)
-
-- **Discourse App**: ~$20-30/month
-- **PostgreSQL Database**: ~$10-15/month
-- **Redis Cache**: ~$5-10/month
-- **Total**: ~$35-55/month
-
-### Additional Costs
-
-- **Domain**: ~$10-15/year
-- **Email Service**: Free (Gmail) or ~$20/month (SendGrid)
-- **Analytics**: Free (Google Analytics)
-
-**Total Estimated Cost**: ~$40-60/month
-
----
-
-**Your BeQuant Community Forum is ready to launch! 🚀** 
+For issues:
+1. Check Railway deployment logs
+2. Verify environment variables
+3. Test configuration locally if possible
+4. Review Discourse documentation 

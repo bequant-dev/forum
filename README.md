@@ -1,315 +1,184 @@
-# BeQuant Community Forum
+# BeQuant Forum - Railway Pre-Deploy Setup
 
-A professional community forum for quantitative finance professionals, powered by Discourse and hosted on Railway.
+This repository contains the pre-deploy configuration for deploying Discourse on Railway using the Bitnami Discourse template.
 
 ## 🚀 Overview
 
-This repository contains documentation and configuration for deploying the BeQuant Community Forum using Discourse on Railway. The forum will integrate with your existing BeQuant platform and maintain consistent branding.
+This setup uses Railway's pre-deploy script feature to automatically:
+1. Clone the `discourse-oauth2-basic` plugin for Clerk SSO integration
+2. Clone a private configuration repository (optional)
+3. Install additional plugins from a plugins list
+4. Set up all necessary configuration files
 
-## 🎯 Forum Features
+## 📁 Repository Structure
 
-- **SSO Integration** with your existing Clerk authentication
-- **BeQuant Branding** - matches your current design system
-- **Categories**: Interview Prep, Trading Strategies, Career Advice, General Discussion
-- **Pro User Benefits** - enhanced forum access for subscribers
-- **Email Notifications** - for relevant posts and discussions
-- **Domain**: forum.bequant.com or community.bequant.com
+```
+forum/
+├── pre-deploy.sh          # Main pre-deploy script
+├── config/
+│   ├── discourse.conf     # Discourse configuration template
+│   ├── site_settings.yml  # Site settings template
+│   └── plugins.txt        # List of additional plugins
+└── README.md              # This file
+```
 
-## 🛠️ Tech Stack
+## 🔧 Railway Setup Instructions
 
-- **Forum Platform**: Discourse
-- **Hosting**: Railway
-- **Authentication**: Clerk OAuth2 (same as BeQuant platform)
-- **Domain**: Custom domain integration
-
-## 📋 Prerequisites
-
-- Railway account
-- Clerk account (existing from BeQuant platform)
-- Domain name (forum.bequant.com or community.bequant.com)
-- Docker knowledge (basic)
-
-## 🚀 Railway Deployment
-
-### 1. Create Railway Project
+### Step 1: Deploy Discourse Template
 
 1. Go to [Railway Dashboard](https://railway.app/dashboard)
-2. Click "New Project"
-3. Select "Deploy from Template"
-4. Search for "Discourse" and select the official template
+2. Click "New Project" → "Deploy from Template"
+3. Search for "Discourse" and select the Bitnami Discourse template
+4. Railway will create the necessary services (Discourse, Sidekiq, PostgreSQL, Redis)
 
-### 2. Configure Environment Variables
+### Step 2: Configure Pre-Deploy Script
 
-Add these environment variables in Railway:
+In your Railway project settings:
 
+1. Go to the **Discourse** service
+2. Navigate to **Settings** → **Deploy**
+3. In the **Pre-Deploy Command** field, enter:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/YOUR_USERNAME/bequant/main/forum/pre-deploy.sh | bash
+```
+
+Replace `YOUR_USERNAME` with your actual GitHub username.
+
+### Step 3: Set Environment Variables
+
+Add these environment variables to your **Discourse** service:
+
+#### Required Variables
 ```env
-# Discourse Configuration
-DISCOURSE_HOSTNAME=forum.bequant.com
-DISCOURSE_DEVELOPER_EMAILS=admin@bequant.com
-DISCOURSE_SMTP_ADDRESS=smtp.gmail.com
-DISCOURSE_SMTP_PORT=587
+# Basic Configuration
+DISCOURSE_HOSTNAME=forum.bequant.dev
+DISCOURSE_DEVELOPER_EMAILS=rajat@bequant.dev,1997.rajatjain@gmail.com
+
+# Database (Railway will auto-generate these)
+DATABASE_HOST=${DATABASE_HOST}
+DATABASE_NAME=${DATABASE_NAME}
+DATABASE_USERNAME=${DATABASE_USERNAME}
+DATABASE_PASSWORD=${DATABASE_PASSWORD}
+
+# Redis (Railway will auto-generate these)
+REDIS_HOST=${REDIS_HOST}
+REDIS_PORT=${REDIS_PORT}
+REDIS_PASSWORD=${REDIS_PASSWORD}
+
+# SMTP Configuration (Gmail)
 DISCOURSE_SMTP_USER_NAME=your-email@gmail.com
 DISCOURSE_SMTP_PASSWORD=your-app-password
-DISCOURSE_SMTP_ENABLE_START_TLS=true
-DISCOURSE_SMTP_DOMAIN=bequant.com
 
-# Database (Railway will provide)
-DATABASE_URL=your-railway-postgres-url
-
-# Redis (Railway will provide)
-REDIS_URL=your-railway-redis-url
-
-# Clerk OAuth2 (Same as BeQuant)
+# Clerk OAuth2 Configuration
 CLERK_OAUTH2_CLIENT_ID=your-clerk-oauth-client-id
 CLERK_OAUTH2_CLIENT_SECRET=your-clerk-oauth-client-secret
 ```
 
-### 3. Deploy Discourse
-
-Railway will automatically deploy Discourse using their optimized template. The deployment includes:
-
-- PostgreSQL database (automatically provisioned)
-- Redis for caching (automatically provisioned)
-- Discourse application (pre-configured)
-- SSL certificate (automatic)
-- All necessary Docker configuration
-
-### 4. Initial Setup
-
-1. Visit your forum URL (provided by Railway)
-2. Complete the initial Discourse setup
-3. Create admin account
-4. Configure categories and permissions
-
-## 🎨 BeQuant Branding Integration
-
-### Color Scheme (from existing BeQuant site)
-
-```css
-/* Primary Colors */
---primary: #2563eb;     /* Indigo-600 */
---primary-dark: #0f172a; /* Slate-900 */
---primary-light: #38bdf8; /* Teal-400 */
-
-/* Accent Colors */
---accent: #f59e0b;      /* Amber-500 */
---success: #10b981;     /* Emerald-500 */
---warning: #f59e0b;     /* Amber-500 */
---danger: #ef4444;      /* Red-500 */
+#### Optional Variables
+```env
+# Private Config Repository (if using)
+CONFIG_REPO_URL=git@github.com:your-username/your-private-config-repo.git
+GITHUB_DEPLOY_KEY=-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----
 ```
 
-### Custom Theme
+### Step 4: Configure Sidekiq Service
 
-Create a custom Discourse theme with:
-
-1. **Header**: BeQuant logo and navigation
-2. **Colors**: Match your existing color scheme
-3. **Typography**: Use Inter font family
-4. **Layout**: Clean, professional design
-
-## 🔐 Clerk SSO Integration
-
-### 1. Configure Clerk
-
-1. Go to your [Clerk Dashboard](https://dashboard.clerk.com)
-2. Add your forum domain to allowed origins
-3. Configure SSO settings
-
-### 2. Discourse SSO Plugin
-
-Install and configure the Clerk SSO plugin for Discourse:
-
-```bash
-# In Discourse admin panel
-cd /var/discourse
-./launcher enter app
-cd /var/www/discourse
-bin/rails console
-```
-
-### 3. SSO Configuration
-
-```ruby
-# In Discourse console
-SiteSetting.sso_url = "https://your-clerk-instance.clerk.accounts.dev/sso"
-SiteSetting.sso_secret = "your-sso-secret"
-SiteSetting.enable_sso = true
-```
-
-## 📧 Email Configuration
-
-### Gmail Setup (Recommended)
-
-1. Enable 2-factor authentication on Gmail
-2. Generate app password
-3. Use app password in DISCOURSE_SMTP_PASSWORD
-
-### Alternative: SendGrid
+For the **Sidekiq** service, add the same environment variables but reference the Discourse service:
 
 ```env
-DISCOURSE_SMTP_ADDRESS=smtp.sendgrid.net
-DISCOURSE_SMTP_PORT=587
-DISCOURSE_SMTP_USER_NAME=apikey
-DISCOURSE_SMTP_PASSWORD=your-sendgrid-api-key
+# Inherit all variables from Discourse service
+DISCOURSE_HOSTNAME=${{Discourse.DISCOURSE_HOSTNAME}}
+DISCOURSE_DEVELOPER_EMAILS=${{Discourse.DISCOURSE_DEVELOPER_EMAILS}}
+DATABASE_HOST=${{Discourse.DATABASE_HOST}}
+DATABASE_NAME=${{Discourse.DATABASE_NAME}}
+DATABASE_USERNAME=${{Discourse.DATABASE_USERNAME}}
+DATABASE_PASSWORD=${{Discourse.DATABASE_PASSWORD}}
+REDIS_HOST=${{Discourse.REDIS_HOST}}
+REDIS_PORT=${{Discourse.REDIS_PORT}}
+REDIS_PASSWORD=${{Discourse.REDIS_PASSWORD}}
+DISCOURSE_SMTP_USER_NAME=${{Discourse.DISCOURSE_SMTP_USER_NAME}}
+DISCOURSE_SMTP_PASSWORD=${{Discourse.DISCOURSE_SMTP_PASSWORD}}
+CLERK_OAUTH2_CLIENT_ID=${{Discourse.CLERK_OAUTH2_CLIENT_ID}}
+CLERK_OAUTH2_CLIENT_SECRET=${{Discourse.CLERK_OAUTH2_CLIENT_SECRET}}
 ```
 
-## 🏗️ Forum Categories
+Also set the same pre-deploy command for Sidekiq.
 
-### Initial Categories Setup
+## 🔐 Private Configuration Repository (Optional)
 
-1. **Interview Prep**
-   - Description: Get ready for quant trading interviews
-   - Color: Blue (#2563eb)
-   - Icon: Briefcase
+If you want to use a private repository for configuration:
 
-2. **Trading Strategies**
-   - Description: Share and discuss quantitative strategies
-   - Color: Green (#10b981)
-   - Icon: Trending Up
+1. Create a private GitHub repository with this structure:
+```
+your-private-config-repo/
+├── discourse.conf
+├── site_settings.yml
+└── plugins.txt
+```
 
-3. **Career Advice**
-   - Description: Career guidance and mentorship
-   - Color: Purple (#8b5cf6)
-   - Icon: Users
+2. Generate a GitHub deploy key:
+```bash
+ssh-keygen -t rsa -b 4096 -C "railway-discourse@bequant.dev" -f ~/.ssh/railway_deploy_key
+```
 
-4. **General Discussion**
-   - Description: General quantitative finance topics
-   - Color: Gray (#6b7280)
-   - Icon: Message Square
+3. Add the public key to your private repository's deploy keys
+4. Add the private key content to Railway as `GITHUB_DEPLOY_KEY`
+5. Set `CONFIG_REPO_URL` to your private repository's SSH URL
 
-## 🔧 Customization
+## 🎯 What the Pre-Deploy Script Does
 
-### 1. Theme Customization
+1. **Environment Check**: Verifies it's running in Bitnami Discourse
+2. **Directory Setup**: Creates necessary plugin and config directories
+3. **OAuth2 Plugin**: Clones the `discourse-oauth2-basic` plugin
+4. **SSH Setup**: Configures GitHub deploy key if provided
+5. **Config Repository**: Clones and processes private config repo if specified
+6. **Plugin Installation**: Installs additional plugins from `plugins.txt`
+7. **Permissions**: Sets correct file ownership for Bitnami user
 
-Create a custom theme in Discourse admin:
+## 🔍 Troubleshooting
 
-1. Go to Admin → Customize → Themes
-2. Create new theme
-3. Upload custom CSS/HTML
-4. Apply to site
+### Pre-Deploy Script Fails
+- Check Railway logs for the exact error
+- Verify the script URL is accessible
+- Ensure all required environment variables are set
 
-### 2. Plugin Installation
+### OAuth2 Plugin Not Working
+- Verify `CLERK_OAUTH2_CLIENT_ID` and `CLERK_OAUTH2_CLIENT_SECRET` are set
+- Check that Clerk OAuth2 application is configured correctly
+- Review Discourse admin logs for OAuth2 errors
 
-Common plugins to install:
+### Configuration Not Applied
+- Check that `discourse.conf` and `site_settings.yml` are in the correct format
+- Verify environment variable interpolation is working
+- Restart the Discourse service after configuration changes
 
-- **Clerk SSO**: For authentication
-- **Discourse Solved**: Mark best answers
-- **Discourse Reactions**: Like/dislike posts
-- **Discourse Calendar**: Event scheduling
+## 📝 Customization
 
-### 3. SEO Optimization
+### Adding More Plugins
+Edit `config/plugins.txt` and add GitHub repository URLs, one per line.
 
-Configure in Discourse admin:
+### Modifying Configuration
+Update `config/discourse.conf` and `config/site_settings.yml` as needed. The files use environment variable interpolation with `${VARIABLE_NAME}` syntax.
 
-- Site title: "BeQuant Community Forum"
-- Site description: "Join the BeQuant community for interview prep, trading strategies, and career advice"
-- Meta tags for social sharing
-- Google Analytics integration
+### Custom Pre-Deploy Logic
+Modify `pre-deploy.sh` to add custom setup steps like:
+- Installing system packages
+- Setting up SSL certificates
+- Configuring custom themes
+- Running database migrations
 
-## 📊 Analytics & Monitoring
+## 🔄 Updates
 
-### 1. Google Analytics
-
-Add Google Analytics tracking code to Discourse header.
-
-### 2. Railway Monitoring
-
-- Monitor resource usage in Railway dashboard
-- Set up alerts for high CPU/memory usage
-- Monitor database performance
-
-### 3. Discourse Analytics
-
-- User engagement metrics
-- Post and topic statistics
-- Category popularity
-
-## 🚀 Success Strategy
-
-### Community Building
-
-1. **Migrate Discord Community**
-   - Invite existing 30-40 Discord members
-   - Seed content from Discord discussions
-   - Cross-promote between platforms
-
-2. **Content Strategy**
-   - Interview prep questions and solutions
-   - Trading strategy discussions
-   - Career advice from professionals
-   - Market analysis and insights
-
-3. **Pro User Benefits**
-   - Enhanced forum access for subscribers
-   - Priority support
-   - Exclusive content areas
-   - Advanced features
-
-### Growth Tactics
-
-1. **SEO Optimization**
-   - Optimize forum content for search
-   - Create valuable, shareable content
-   - Build backlinks from trading communities
-
-2. **Social Media Promotion**
-   - Share forum discussions on Twitter/LinkedIn
-   - Create content marketing around forum topics
-   - Engage with quantitative finance communities
-
-3. **Email Marketing**
-   - Newsletter featuring top forum discussions
-   - Weekly digest of best content
-   - Invite existing BeQuant users
-
-## 🔧 Maintenance
-
-### Regular Tasks
-
-1. **Backup Database**
-   - Railway provides automatic backups
-   - Monitor backup health
-
-2. **Update Discourse**
-   - Regular security updates
-   - Feature updates
-   - Plugin updates
-
-3. **Monitor Performance**
-   - Check Railway resource usage
-   - Monitor forum performance
-   - User feedback and issues
-
-### Troubleshooting
-
-Common issues and solutions:
-
-1. **Email not working**: Check SMTP settings
-2. **SSO issues**: Verify Clerk configuration
-3. **Performance issues**: Check Railway resources
-4. **Database issues**: Monitor PostgreSQL logs
+To update the configuration:
+1. Modify the files in this repository
+2. Push changes to GitHub
+3. Redeploy the Railway service (the pre-deploy script will pull the latest version)
 
 ## 📞 Support
 
-For technical support:
-
-- **Railway**: Check Railway documentation and support
-- **Discourse**: Visit [Discourse Meta](https://meta.discourse.org)
-- **Clerk**: Contact Clerk support for SSO issues
-
-## 🎉 Launch Checklist
-
-- [ ] Railway deployment complete
-- [ ] Domain configured and SSL working
-- [ ] Email notifications working
-- [ ] Clerk SSO integration complete
-- [ ] Categories and permissions set up
-- [ ] Custom theme applied
-- [ ] Analytics tracking configured
-- [ ] Content seeded from Discord
-- [ ] Pro user benefits configured
-- [ ] Launch announcement ready
-
----
-
-**Ready to launch the BeQuant Community Forum! 🚀** 
+For issues with this setup:
+1. Check Railway deployment logs
+2. Verify all environment variables are set correctly
+3. Test the pre-deploy script locally if possible
+4. Review Discourse documentation for configuration options 

@@ -1,0 +1,67 @@
+# Site Settings for BeQuant Forum
+# This file will be copied to /opt/bitnami/discourse/mounted-conf/
+
+# OAuth2 Plugin Settings
+oauth2_enabled: true
+oauth2_client_id: ${CLERK_OAUTH2_CLIENT_ID}
+oauth2_client_secret: ${CLERK_OAUTH2_CLIENT_SECRET}
+oauth2_authorize_url: https://clerk.bequant.dev/oauth/authorize
+oauth2_token_url: https://clerk.bequant.dev/oauth/token
+oauth2_user_info_url: https://clerk.bequant.dev/oauth/userinfo
+oauth2_scope: openid profile email
+oauth2_send_auth_header: true
+oauth2_fetch_user_groups: false
+oauth2_verbose_logging: true
+
+# Site Branding
+title: "BeQuant Community Forum"
+site_description: "Join the BeQuant community to discuss quantitative finance, trading strategies, and career development."
+logo_url: "/images/logo.png"
+logo_small_url: "/images/logo-small.png"
+
+# Email Settings
+notification_email: "noreply@bequant.dev"
+email_from: "BeQuant Forum <noreply@bequant.dev>"
+
+# User Experience
+default_locale: en
+allow_duplicate_topic_titles: false
+enable_names: true
+enable_user_directory: true
+enable_badges: true
+enable_personal_messages: true
+
+# Content Settings
+max_topics_per_day: 50
+max_posts_per_day: 100
+max_edits_per_day: 50
+max_flags_per_day: 20
+
+# Trust Levels
+default_trust_level: 1
+basic_requires_topics_entered: 5
+basic_requires_topics_replied_to: 4
+basic_requires_read_posts: 30
+basic_requires_time_spent_mins: 60
+
+regular_requires_topics_entered: 20
+regular_requires_topics_replied_to: 20
+regular_requires_read_posts: 100
+regular_requires_time_spent_mins: 180
+
+# Categories
+uncategorized_name: "General Discussion"
+uncategorized_color: "0088CC"
+uncategorized_text_color: "FFFFFF"
+
+# Security
+min_trust_level_to_allow_invite: 2
+min_trust_level_to_allow_self_wiki: 3
+min_trust_level_to_edit_wiki_post: 3
+min_trust_level_to_flag_posts: 1
+min_trust_level_to_hide_post: 3
+
+# Performance
+max_edits_per_post: 10
+max_edits_per_day: 50
+max_edits_per_hour: 10 

@@ -1,0 +1,20 @@
+# Additional plugins to install
+# Each line should be a GitHub repository URL
+
+# Discourse Math (for LaTeX support)
+https://github.com/discourse/discourse-math.git
+
+# Discourse Spoiler Alert
+https://github.com/discourse/discourse-spoiler-alert.git
+
+# Discourse Solved
+https://github.com/discourse/discourse-solved.git
+
+# Discourse Assign
+https://github.com/discourse/discourse-assign.git
+
+# Discourse Reactions
+https://github.com/discourse/discourse-reactions.git
+
+# Discourse Calendar
+https://github.com/discourse/discourse-calendar.git 
